@@ -248,12 +248,27 @@ class MockMassenanlage:
         """Variante laden: Werk, Vk.org UND das vorbelegte Vorlagematerial
         uebernehmen. Die Vorlagedaten sind danach sofort geladen -
         wie im Original steht die Maske nie 'leer' da. Genau daraus
-        entsteht die Enter-Falle."""
+        entsteht die Enter-Falle.
+
+        Beim Variantenwechsel werden ausserdem die Materialeingaben
+        (Artikel, Farbe, Mehrfachselektion) und das Protokoll geleert -
+        wie in echt muss fuer das neue Werk alles neu eingetragen
+        werden. Verhindert, dass Eingaben aus dem vorigen Werk
+        versehentlich stehen bleiben."""
         daten = WERK_VARIANTEN[self.variante_var.get()]
         self.vorlagewerk_var.set(daten["werk"])
         self.vkorg_var.set(daten["vk_org"])
         self.vorlagematerial_var.set(daten["default_vorlage"])
         self._vorlage_anzeigen(daten["default_vorlage"])
+
+        # Materialeingaben und Protokoll zuruecksetzen
+        self.artikel_var.set("")
+        self.farbe_var.set("")
+        self.weitere_farben = []
+        self.weitere_var.set("")
+        # grid existiert beim ersten Aufruf (aus __init__) noch nicht
+        if hasattr(self, "grid"):
+            self.grid.delete(*self.grid.get_children())
 
     def _aktuelle_farben(self):
         """Farbe aus dem Feld plus Farben aus der Mehrfachselektion,
