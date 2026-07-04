@@ -144,10 +144,61 @@ DEFAULT_STATE = {
             "angelegt_am": "2026-04-03T08:05:00",
         },
         {
+            "werk": "2090", "material": "DT5290-0500Z", "art": "DT",
+            "stamm": "DT5290", "farbe": "0500Z", "vorlage": "2345-TEMPLATE",
+            "vk_org": "2000", "gesperrt": False,
+            "angelegt_am": "2026-04-03T08:05:00",
+        },
+        {
             "werk": "2010", "material": "2345-0500Z", "art": "FG",
             "stamm": "2345", "farbe": "0500Z", "vorlage": "2345-TEMPLATE",
             "vk_org": "2000", "gesperrt": False,
             "angelegt_am": "2026-04-03T08:05:00",
+        },
+        {
+            "werk": "2090", "material": "2345-0500Z", "art": "FG",
+            "stamm": "2345", "farbe": "0500Z", "vorlage": "2345-TEMPLATE",
+            "vk_org": "2000", "gesperrt": False,
+            "angelegt_am": "2026-04-03T08:05:00",
+        },
+    ],
+    # CDE-Liste (Farbentwicklungsauftraege) - der Prozess-Eingang.
+    # Status 100 = anlagebereit (verfremdet), 200 = dokumentiert.
+    # Die vier CDEs zeigen exakt auf die vier Entscheidungsszenarien:
+    # 0100Z -> B1, 0300Z -> B2 (Version 2 = PPAP-Wiederholung!),
+    # 0700Z -> A (neu), 0500Z -> A (nur fremder Werkskreis).
+    "cde_liste": [
+        {
+            "nummer": "CDE-90211", "erfasser": "A. Weber", "status": "100",
+            "version": "1", "artikel": "1234",
+            "bezeichnung": "Naehgarn Basis Typ A", "farbe": "0100Z",
+            "produktionswerk": "1090", "vk_org": "1000",
+            "debitor": "10001", "kunde": "Kunde A",
+            "anlagedatum": "", "bearbeiter_freigabe": "",
+        },
+        {
+            "nummer": "CDE-90214", "erfasser": "M. Fischer", "status": "100",
+            "version": "2", "artikel": "1234",
+            "bezeichnung": "Naehgarn Basis Typ A", "farbe": "0300Z",
+            "produktionswerk": "1090", "vk_org": "1000",
+            "debitor": "10002", "kunde": "Kunde B",
+            "anlagedatum": "", "bearbeiter_freigabe": "",
+        },
+        {
+            "nummer": "CDE-90218", "erfasser": "R. Santos", "status": "100",
+            "version": "1", "artikel": "1234",
+            "bezeichnung": "Naehgarn Basis Typ A", "farbe": "0700Z",
+            "produktionswerk": "1090", "vk_org": "1000",
+            "debitor": "10003", "kunde": "Kunde C",
+            "anlagedatum": "", "bearbeiter_freigabe": "",
+        },
+        {
+            "nummer": "CDE-90223", "erfasser": "T. Wibowo", "status": "100",
+            "version": "1", "artikel": "1234",
+            "bezeichnung": "Naehgarn Basis Typ A", "farbe": "0500Z",
+            "produktionswerk": "1090", "vk_org": "1000",
+            "debitor": "10004", "kunde": "Kunde D",
+            "anlagedatum": "", "bearbeiter_freigabe": "",
         },
     ],
 }
@@ -211,3 +262,17 @@ def material_anlegen(state, werk, material, art, stamm, farbe, vorlage, vk_org):
             "angelegt_am": datetime.now().isoformat(timespec="seconds"),
         }
     )
+
+
+def cde_dokumentieren(state, nummer, anlagedatum, kuerzel):
+    """CDE abschliessen: Anlagedatum und Bearbeiter-Kuerzel eintragen,
+    Status springt von 100 (anlagebereit) auf 200 (dokumentiert).
+    Die Uebersichts-Variante filtert auf Status 100 - der CDE
+    verschwindet damit automatisch aus der Liste."""
+    for cde in state["cde_liste"]:
+        if cde["nummer"] == nummer:
+            cde["anlagedatum"] = anlagedatum
+            cde["bearbeiter_freigabe"] = kuerzel
+            cde["status"] = "200"
+            return True
+    return False

@@ -40,7 +40,6 @@ Bewusst nachgebaute Eigenheiten des Originals:
 """
 
 import random
-import time
 import datetime
 import tkinter as tk
 from tkinter import ttk, messagebox
@@ -76,7 +75,6 @@ SICHTEN = [
 
 LADEZEIT_MIN_MS = 1500   # Vorlage-Laden dauert zufaellig zwischen
 LADEZEIT_MAX_MS = 4000   # 1,5 und 4 Sekunden (wie ein echtes System)
-HANG_DAUER_S = 45        # simulierter Systemhaenger im Testmodus
 
 
 class MockMassenanlage:
@@ -197,12 +195,6 @@ class MockMassenanlage:
         frame = ttk.Frame(self.root, padding=(12, 10, 12, 0))
         frame.pack(fill="x")
         ttk.Button(frame, text="Anlegen", command=self._anlegen).pack(side="left")
-        self.testmodus_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(
-            frame,
-            text="Testmodus: Systemfehler simulieren",
-            variable=self.testmodus_var,
-        ).pack(side="right")
 
     def _build_protokoll(self):
         frame = ttk.LabelFrame(self.root, text="Protokoll", padding=(10, 6, 10, 8))
@@ -361,10 +353,6 @@ class MockMassenanlage:
     # Anlegen
     # ------------------------------------------------------------------ #
     def _anlegen(self):
-        if self.testmodus_var.get():
-            self._systemfehler_simulieren()
-            return
-
         werk = self.vorlagewerk_var.get()
         vk_org = self.vkorg_var.get()
         artikel = self.artikel_var.get().strip().upper()
@@ -452,22 +440,6 @@ class MockMassenanlage:
                     "", "end", tags=("ok",),
                     values=(name, "OK", f"{sicht} erfolgreich angelegt"),
                 )
-
-    # ------------------------------------------------------------------ #
-    # Testmodus: Systemhaenger
-    # ------------------------------------------------------------------ #
-    def _systemfehler_simulieren(self):
-        """Blockiert absichtlich den Tkinter-Mainloop: das Fenster
-        reagiert nicht mehr ('Keine Rueckmeldung'), wie eine haengende
-        SAP-Session. Der Bot soll das per Timeout erkennen, der
-        Watchdog soll alarmieren."""
-        self._status(
-            f"SIMULIERTER SYSTEMFEHLER: Session haengt {HANG_DAUER_S}s "
-            f"(Testmodus aktiv)...", fehler=True,
-        )
-        self.root.update_idletasks()  # letzte Anzeige VOR dem Einfrieren
-        time.sleep(HANG_DAUER_S)
-        self._status("Session wieder frei (Testmodus).")
 
 
 def main():
