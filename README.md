@@ -136,6 +136,42 @@ flowchart TD
 
 Die Entscheidung fällt **pro Material** (Artikel-Farbe), nicht pro Auftrag.
 
+## Phase 2: Was die Logik ausgibt
+
+Die Python-Schicht entscheidet nicht nur den Fall, sondern erzeugt daraus
+einen konkreten **Arbeitsauftrag** – die Schrittliste, die später UiPath
+(die "Hände") stur abarbeitet. Das ist der Übergabepunkt zwischen Kopf und
+Händen: Python denkt, UiPath führt aus. Das `Enter!` in jedem Anlege-Schritt
+ist die strukturelle Absicherung gegen die Enter-Falle – der Bot kann sie
+nicht vergessen, weil sie fester Teil der Anweisung ist.
+
+Der entscheidende Unterschied zeigt sich beim Vergleich der Fälle. **Fall A1
+(volle Kette)** – neue Farbe, muss durch den PPAP:
+
+```
+CDE-90218 / Fall A1:
+  1. Anlegen: 1234-0700Z in Werk 1010 (Vorlage 1234-TEMPLATE, Enter!)
+  2. Anlegen: 1234-0700Z in Werk 1090 (Vorlage 1234-TEMPLATE, Enter!)
+  3. Sperren: Gruppe 210, Farbe 0700Z, Werke 1010+1090
+  4. Entsperren: Gruppe 210, Farbe 0700Z, Werk 1090 (PPAP öffnen)
+  5. Post-Check + CDE dokumentieren
+```
+
+**Fall B1 (nur Anlage)** – ein Geschwister ist bereits kundenfreigegeben,
+deshalb entfallen die Sperr-Schritte 3 und 4:
+
+```
+CDE-90211 / Fall B1:
+  1. Anlegen: 1234-0100Z in Werk 1010 (Vorlage 1234-TEMPLATE, Enter!)
+  2. Anlegen: 1234-0100Z in Werk 1090 (Vorlage 1234-TEMPLATE, Enter!)
+  3. Post-Check + CDE dokumentieren
+```
+
+Genau hier greift der Entscheidungsbaum: Würde B1 fälschlich gesperrt, träfe
+die gruppenweite Sperre das freigegebene Geschwister – laufende
+Serienfertigung bliebe hängen. A2 und B2 erzeugen dieselbe volle Kette wie
+A1, nur der Weg zur Entscheidung unterscheidet sich.
+
 ## Prozesskette je Material
 
 1. CDE-Übersicht lesen: Artikel, Farbe, Produktionswerk (PPAP-Werk =
@@ -301,8 +337,10 @@ nachlesen, von welcher Vorlage tatsächlich kopiert wurde (auch in der
 - [x] Mock-System: fünf Masken + zentrale Statusdatei
 - [x] Entscheidungslogik A1/A2/B1/B2 als Python-Prototyp verifiziert
 - [x] Alle vier Entscheidungspfade manuell Ende-zu-Ende durchgespielt
-- [ ] Phase 2: Python-Validierung und Orchestrierung (liest die
-      CDE-Übersicht, trifft die Fallentscheidung, steuert die Kette)
+- [x] Phase 2 (Kern): Python liest die CDE-Liste, entscheidet den Fall
+      und erzeugt den Arbeitsauftrag – lauffähig gegen die Statusdatei
+- [ ] Phase 2 (Ausbau): Fehlerbehandlung (Business/System Exception),
+      Flaggen und error_log
 - [ ] Phase 3: UiPath-Workflows (REFramework, wiederverwendbare Bausteine
       je Maske, Business/System Exceptions)
 - [ ] Phase 4: Watchdog + Outlook-Alarmierung, Post-Check-Gate
