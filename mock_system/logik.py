@@ -99,6 +99,40 @@ def entscheide_fall(report_zeilen, eigener_kreis):
     return "B2"
 
 
+def baue_arbeitsauftrag(cde, fall, gruppe):
+    """Uebersetzt den entschiedenen Fall in konkrete Handlungsschritte -
+    die Anweisung, die spaeter UiPath (die 'Haende') stur ausfuehrt.
+
+    Vorlage = Artikelnummer + '-TEMPLATE' (immer derselbe Artikel, nie
+    ein fremder). In der Praxis traegt sie einen Farbslot, z.B.
+    artikel-COLOR05 (Standard) oder artikel-COL01 (Automotive);
+    fuer die Demo vereinfacht auf '-TEMPLATE'.
+
+    Bei B1 entfallen die Sperr-Schritte (Kunde hat bereits freigegeben),
+    bei A1/A2/B2 laeuft die volle Kette.
+    """
+    artikel = cde["artikel"]
+    farbe = cde["farbe"]
+    material = f"{artikel}-{farbe}"
+    vorlage = f"{artikel}-TEMPLATE"
+
+    ppap_werk = cde["produktionswerk"]
+    standardwerk = WERKSPAARE[ppap_werk]   # z.B. 1090 -> 1010
+
+    schritte = []
+    # Anlegen passiert in ALLEN Faellen, in beiden Werken
+    schritte.append(f"Anlegen: {material} in Werk {standardwerk} (Vorlage {vorlage}, Enter!)")
+    schritte.append(f"Anlegen: {material} in Werk {ppap_werk} (Vorlage {vorlage}, Enter!)")
+
+    # Sperren nur bei A1/A2/B2 - bei B1 ist der Kunde bereits durch
+    if fall != "B1":
+        schritte.append(f"Sperren: Gruppe {gruppe}, Farbe {farbe}, Werke {standardwerk}+{ppap_werk}")
+        schritte.append(f"Entsperren: Gruppe {gruppe}, Farbe {farbe}, Werk {ppap_werk} (PPAP oeffnen)")
+
+    schritte.append(f"Post-Check + CDE {cde['nummer']} dokumentieren")
+    return schritte
+
+
 def main():
     state = state_manager.load_state()
 
@@ -117,9 +151,12 @@ def main():
         gruppe = hole_rezeptgruppe(state, artikel)
         report_zeilen = baue_report_zeilen(state, gruppe, farbe)
         fall = entscheide_fall(report_zeilen, eigener_kreis)
+        auftrag = baue_arbeitsauftrag(cde, fall, gruppe)
 
-        print(f"{cde['nummer']}: Artikel {artikel}, Farbe {farbe}, "
+        print(f"\n{cde['nummer']}: Artikel {artikel}, Farbe {farbe}, "
               f"Gruppe {gruppe}, Kreis {eigener_kreis} -> Fall {fall}")
+        for nr, schritt in enumerate(auftrag, start=1):
+            print(f"   {nr}. {schritt}")
 
 
 if __name__ == "__main__":
